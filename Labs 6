@@ -1,0 +1,82 @@
+using System;
+using System.Text;
+using System.Globalization;
+
+class QuadraticSolver
+{
+    static void Main()
+    {
+        Console.OutputEncoding = Encoding.UTF8;
+        Console.InputEncoding = Encoding.UTF8;
+
+        Console.WriteLine("=== РЕШЕНИЕ КВАДРАТНОГО УРАВНЕНИЯ ax^2 + bx + c = 0 ===");
+        if (!ReadCoefficients(out double a, out double b, out double c))
+        {
+            Console.WriteLine("Ошибка ввода: коэффициенты должны быть числами.");
+            return;
+        }
+
+        int rootsCount = SolveQuadratic(a, b, c, out double d, out double x1, out double x2);
+        PrintResult(a, b, c, d, rootsCount, x1, x2);
+    }
+
+    /// <summary>Считывает коэффициенты a, b, c с клавиатуры.</summary>
+    static bool ReadCoefficients(out double a, out double b, out double c)
+    {
+        a = b = c = 0;
+        return TryReadDouble("Введите коэффициент a: ", out a)
+            && TryReadDouble("Введите коэффициент b: ", out b)
+            && TryReadDouble("Введите коэффициент c: ", out c);
+    }
+
+    /// <summary>Считывает одно вещественное число с проверкой формата.</summary>
+    static bool TryReadDouble(string prompt, out double value)
+    {
+        Console.Write(prompt);
+        string input = Console.ReadLine();
+        return double.TryParse(input?.Replace(',', '.'), NumberStyles.Float,
+                               CultureInfo.InvariantCulture, out value);
+    }
+
+    /// <summary>Вычисляет дискриминант и корни квадратного уравнения.</summary>
+    static int SolveQuadratic(double a, double b, double c,
+                              out double d, out double x1, out double x2)
+    {
+        const double eps = 1e-12;
+        d = b * b - 4 * a * c;
+        x1 = x2 = 0;
+
+        if (Math.Abs(a) < eps)
+            return -1; // уравнение не является квадратным (a = 0)
+
+        if (d < -eps)
+            return 0;  // действительных корней нет
+
+        if (Math.Abs(d) <= eps)
+        {
+            x1 = -b / (2 * a);
+            return 1;  // один корень (кратности 2)
+        }
+
+        double sqrtD = Math.Sqrt(d);
+        x1 = (-b - sqrtD) / (2 * a);
+        x2 = (-b + sqrtD) / (2 * a);
+        return 2;      // два различных действительных корня
+    }
+
+    /// <summary>Выводит дискриминант и найденные корни в консоль.</summary>
+    static void PrintResult(double a, double b, double c,
+                            double d, int rootsCount, double x1, double x2)
+    {
+        Console.WriteLine($"\nУравнение: ({a:F2})x^2 + ({b:F2})x + ({c:F2}) = 0");
+        if (rootsCount == -1)
+            Console.WriteLine("Ошибка: коэффициент a равен 0 (уравнение линейное).");
+        else if (rootsCount == 0)
+            Console.WriteLine($"D = {d:F2} < 0. Действительных корней нет.");
+        else if (rootsCount == 1)
+            Console.WriteLine($"D = 0. Единственный корень: x = {x1:F2}");
+        else
+            Console.WriteLine($"D = {d:F2} > 0. Корни: x1 = {x1:F2}, x2 = {x2:F2}");
+    }
+}
+ 
