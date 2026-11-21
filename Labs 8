@@ -1,0 +1,48 @@
+using System;
+using System.Text;
+
+interface IAttacker
+{
+    int Attack();
+}
+
+abstract class Character : IAttacker
+{
+    public string Name { get; }
+    public int Health { get; protected set; }
+    public int BaseDamage { get; }
+
+    protected Character(string name, int health, int baseDamage)
+    {
+        Name = string.IsNullOrWhiteSpace(name) ? "Безымянный" : name;
+        Health = health > 0 ? health : 100;
+        BaseDamage = baseDamage > 0 ? baseDamage : 10;
+    }
+
+    public abstract int Attack();
+    public virtual string GetInfo() => $"{Name} (HP: {Health}, урон: {BaseDamage})";
+}
+
+class Warrior : Character
+{
+    public int Armor { get; }
+
+    public Warrior(string name, int health, int baseDamage, int armor)
+        : base(name, health, baseDamage) => Armor = armor;
+
+    public override int Attack() => BaseDamage + Armor / 2;
+    public override string GetInfo() => $"[Воин] {base.GetInfo()}, броня: {Armor}";
+}
+
+class Mage : Character
+{
+    public int Mana { get; private set; }
+
+    public Mage(string name, int health, int baseDamage, int mana)
+        : base(name, health, baseDamage) => Mana = mana;
+
+    public override int Attack()
+    {
+        if (Mana >= 10) { Mana -= 10; return BaseDamage * 2; }
+        return
+ 
