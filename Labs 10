@@ -1,0 +1,133 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace BattleshipGame
+{
+    public enum CellState { Empty, Ship, Hit, Miss }
+    public enum ShotResult { Miss, Hit, Sunk, AlreadyShot }
+
+    public class Ship
+    {
+        public int Length { get; }
+        public List<(int Row, int Col)> Cells { get; } = new();
+        public int Hits { get; private set; }
+        public bool IsSunk => Hits >= Length;
+
+        public Ship(int length)
+        {
+            if (length < 1 || length > 4)
+                throw new ArgumentOutOfRangeException(nameof(length), "Длина корабля: 1–4.");
+            Length = length;
+        }
+        public void RegisterHit() => Hits++;
+    }
+
+    public class Board
+    {
+        public const int Size = 10;
+        public static readonly int[] FleetSizes = { 4, 3, 3, 2, 2, 2, 1, 1, 1, 1 };
+        private readonly CellState[,] _grid = new CellState[Size, Size];
+        private readonly Dictionary<(int, int), Ship> _shipMap = new();
+        public List<Ship> Ships { get; } = new();
+        public bool AllShipsSunk => Ships.Count > 0 && Ships.All(s => s.IsSunk);
+        public CellState GetCell(int r, int c) => _grid[r, c];
+
+        public void PlaceShip(int row, int col, int length, bool horizontal)
+        {
+            var ship = new Ship(length);
+            var coords = new List<(int r, int c)>();
+            for (int i = 0; i < length; i++)
+            {
+                int r = horizontal ? row : row + i, c = horizontal ? col + i : col;
+                if (r < 0 || r >= Size || c < 0 || c >= Size)
+                    throw new ArgumentOutOfRangeException("Корабль выходит за поле 10x10.");
+                coords.Add((r, c));
+            }
+            foreach (var (r, c) in coords)
+                for (int dr = -1; dr <= 1; dr++)
+                    for (int dc = -1; dc <= 1; dc++)
+                    {
+                        int nr = r + dr, nc = c + dc;
+                        if (nr >= 0 && nr < Size && nc >= 0 && nc < Size && _grid[nr, nc] == CellState.Ship)
+                            throw new InvalidOperationException("Корабли не могут касаться друг друга.");
+                    }
+            foreach (var pos in coords)
+            {
+                _grid[pos.r, pos.c] = CellState.Ship;
+                ship.Cells.Add(pos);
+                _shipMap[pos] = ship;
+            }
+            Ships.Add(ship);
+        }
+
+        public void PlaceFleetRandomly(Random rng)
+        {
+            foreach (int len in FleetSizes)
+            {
+                bool placed = false;
+                for (int attempt = 0; attempt < 500 && !placed; attempt++)
+                {
+                    try { PlaceShip(rng.Next(Size), rng.Next(Size), len, rng.Next(2) == 0); placed = true; }
+                    catch (Exception) { /* пробуем следующую позицию */ }
+                }
+                if (!placed) throw new InvalidOperationException("Не удалось разместить флот.");
+            }
+        }
+
+        public ShotResult ReceiveShot(int row, int col)
+        {
+            if (row < 0 || row >= Size || col < 0 || col >= Size)
+                throw new ArgumentOutOfRangeException("Координаты выстрела вне поля 10x10.");
+            if (_grid[row, col] == CellState.Hit || _grid[row, col] == CellState.Miss)
+                return ShotResult.AlreadyShot;
+            if (_grid[row, col] == CellState.Ship)
+            {
+                _grid[row, col] = CellState.Hit;
+                var ship = _shipMap[(row, col)];
+                ship.RegisterHit();
+                return ship.IsSunk ? ShotResult.Sunk : ShotResult.Hit;
+            }
+            _grid[row, col] = CellState.Miss;
+            return ShotResult.Miss;
+        }
+    }
+
+    public class AiOpponent
+    {
+        private readonly Random _rng;
+        private readonly HashSet<(int, int)> _tried = new();
+        private readonly Queue<(int, int)> _targets = new();
+
+        public AiOpponent(Random rng = null) => _rng = rng ?? new Random();
+
+        public (int Row, int Col) ChooseTarget()
+        {
+            while (_targets.Count > 0)
+            {
+                var next = _targets.Dequeue();
+                if (_tried.Add(next)) return next;
+            }
+            var free = new List<(int, int)>();
+            for (int r = 0; r < Board.Size; r++)
+                for (int c = 0; c < Board.Size; c++)
+                    if (!_tried.Contains((r, c))) free.Add((r, c));
+            if (free.Count == 0) throw new InvalidOperationException("Нет доступных клеток.");
+            var pick = free[_rng.Next(free.Count)];
+            _tried.Add(pick);
+            return pick;
+        }
+
+        public void RegisterHit(int row, int col)
+        {
+            int[] dr = { -1, 1, 0, 0 }, dc = { 0, 0, -1, 1 };
+            for (int i = 0; i < 4; i++)
+            {
+                int nr = row + dr[i], nc = col + dc[i];
+                if (nr >= 0 && nr < Board.Size && nc >= 0 && nc < Board.Size && !_tried.Contains((nr, nc)))
+                    _targets.Enqueue((nr, nc));
+            }
+        }
+    }
+}
