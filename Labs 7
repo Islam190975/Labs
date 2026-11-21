@@ -1,0 +1,74 @@
+using System;
+using System.Text;
+using System.Globalization;
+
+class Temperature
+{
+    private double _celsius; // внутреннее хранение в °C исключает дублирование
+
+    public double Value { get; private set; }
+    public char Scale { get; private set; }
+
+    public Temperature(double value, char scale)
+    {
+        Scale = char.ToUpper(scale);
+        Value = value;
+        _celsius = Scale switch
+        {
+            'C' => value,
+            'F' => (value - 32.0) * 5.0 / 9.0,
+            'K' => value - 273.15,
+            _   => throw new ArgumentException("Допустимые шкалы: C, F, K.")
+        };
+
+        if (_celsius < -273.15 - 1e-9)
+            throw new ArgumentException("Температура не может быть ниже абсолютного нуля.");
+    }
+
+    public double ToCelsius()    => _celsius;
+    public double ToFahrenheit() => _celsius * 9.0 / 5.0 + 32.0;
+    public double ToKelvin()     => _celsius + 273.15;
+
+    public override string ToString() => $"{Value:F2} °{Scale}";
+}
+
+class Program
+{
+    static void Main()
+    {
+        Console.OutputEncoding = Encoding.UTF8;
+        Console.InputEncoding = Encoding.UTF8;
+
+        Console.WriteLine("=== КОНВЕРТЕР ТЕМПЕРАТУРЫ (ООП) ===");
+        Console.Write("Введите значение температуры: ");
+        string rawVal = Console.ReadLine();
+        if (!double.TryParse(rawVal?.Replace(',', '.'), NumberStyles.Float,
+                             CultureInfo.InvariantCulture, out double val))
+        {
+            Console.WriteLine("Ошибка ввода: необходимо ввести числовое значение.");
+            return;
+        }
+
+        Console.Write("Введите шкалу (C / F / K): ");
+        string rawScale = Console.ReadLine()?.Trim();
+        if (string.IsNullOrEmpty(rawScale) || rawScale.Length != 1)
+        {
+            Console.WriteLine("Ошибка: укажите один символ шкалы (C, F или K).");
+            return;
+        }
+
+        try
+        {
+            Temperature temp = new Temperature(val, rawScale[0]);
+            Console.WriteLine($"\nИсходная температура: {temp}");
+            Console.WriteLine($"Цельсий   (C): {temp.ToCelsius():F2} °C");
+            Console.WriteLine($"Фаренгейт (F): {temp.ToFahrenheit():F2} °F");
+            Console.WriteLine($"Кельвин   (K): {temp.ToKelvin():F2} K");
+        }
+        catch (ArgumentException ex)
+        {
+            Console.WriteLine("Ошибка: " + ex.Message);
+        }
+    }
+}
+ 
