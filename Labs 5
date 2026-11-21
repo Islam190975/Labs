@@ -1,0 +1,81 @@
+using System;
+using System.Text;
+using System.Collections.Generic;
+
+class BracketChecker
+{
+    static void Main()
+    {
+        Console.OutputEncoding = Encoding.UTF8;
+        Console.InputEncoding = Encoding.UTF8;
+
+        Console.WriteLine("=== ПРОВЕРКА КОРРЕКТНОСТИ СКОБОК ()[]{} ===");
+        Console.Write("Введите строку для проверки: ");
+        string input = Console.ReadLine();
+
+        // Обработка пустой строки
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            Console.WriteLine("Введена пустая строка — скобки отсутствуют (корректно).");
+            return;
+        }
+
+        bool isValid = CheckBrackets(input, out string message, out int bracketCount);
+        Console.WriteLine($"\nПроверено символов: {input.Length}, из них скобок: {bracketCount}");
+        Console.WriteLine(isValid
+            ? $"Результат: {message}"
+            : $"Результат: ОШИБКА — {message}");
+    }
+
+    static bool CheckBrackets(string text, out string message, out int count)
+    {
+        Stack<char> stack = new Stack<char>();
+        count = 0;
+
+        for (int i = 0; i < text.Length; i++)
+        {
+            char ch = text[i];
+
+            // Открывающие скобки помещаются в стек
+            if (ch == '(' || ch == '[' || ch == '{')
+            {
+                stack.Push(ch);
+                count++;
+            }
+            // Закрывающие скобки сверяются с вершиной стека
+            else if (ch == ')' || ch == ']' || ch == '}')
+            {
+                count++;
+                if (stack.Count == 0)
+                {
+                    message = $"лишняя закрывающая скобка '{ch}' на позиции {i + 1}.";
+                    return false;
+                }
+                char open = stack.Pop();
+                if (!IsMatchingPair(open, ch))
+                {
+                    message = $"несоответствие '{open}' и '{ch}' на позиции {i + 1}.";
+                    return false;
+                }
+            }
+            // Буквы любого регистра, цифры и спецсимволы игнорируются
+        }
+
+        if (stack.Count > 0)
+        {
+            message = $"остались незакрытые скобки (не закрыто: {stack.Count}).";
+            return false;
+        }
+
+        message = count > 0
+            ? "скобки расставлены корректно."
+            : "скобки в строке отсутствуют (корректно).";
+        return true;
+    }
+
+    static bool IsMatchingPair(char open, char close) =>
+        (open == '(' && close == ')') ||
+        (open == '[' && close == ']') ||
+        (open == '{' && close == '}');
+}
+ 
