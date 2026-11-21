@@ -1,0 +1,67 @@
+using System;
+using System.Text;
+using System.Globalization;
+
+class TriangleChecker
+{
+    const double Eps = 1e-9;
+
+    static void Main()
+    {
+        Console.OutputEncoding = Encoding.UTF8;
+        Console.InputEncoding = Encoding.UTF8;
+
+        Console.WriteLine("=== ПРОВЕРКА ТРЕУГОЛЬНИКА ===");
+        if (!TryReadSide("Введите сторону a: ", out double a) ||
+            !TryReadSide("Введите сторону b: ", out double b) ||
+            !TryReadSide("Введите сторону c: ", out double c))
+        {
+            Console.WriteLine("Ошибка ввода: необходимо ввести числовые значения.");
+            return;
+        }
+
+        // Проверка положительности сторон и неравенства треугольника
+        if (a <= 0 || b <= 0 || c <= 0)
+        {
+            Console.WriteLine("Ошибка: длины сторон должны быть больше нуля.");
+            return;
+        }
+        if (!(a + b > c && a + c > b && b + c > a))
+        {
+            Console.WriteLine("Треугольник с такими сторонами не существует.");
+            return;
+        }
+
+        // Подсчёт равных пар сторон и определение типа через switch/case
+        int equalPairs = (AreEqual(a, b) ? 1 : 0)
+                       + (AreEqual(b, c) ? 1 : 0)
+                       + (AreEqual(a, c) ? 1 : 0);
+
+        string sideType;
+        switch (equalPairs)
+        {
+            case 3:  sideType = "равносторонний"; break;
+            case 1:  sideType = "равнобедренный"; break;
+            default: sideType = "разносторонний"; break;
+        }
+
+        // Проверка теоремы Пифагора для определения прямоугольного треугольника
+        double[] sides = { a, b, c };
+        Array.Sort(sides);
+        bool isRight = AreEqual(sides[0] * sides[0] + sides[1] * sides[1],
+                                sides[2] * sides[2]);
+
+        string angleInfo = isRight ? ", прямоугольный" : "";
+        Console.WriteLine($"\nТреугольник существует. Тип: {sideType}{angleInfo}.");
+    }
+
+    static bool TryReadSide(string prompt, out double value)
+    {
+        Console.Write(prompt);
+        string input = Console.ReadLine();
+        return double.TryParse(input?.Replace(',', '.'), NumberStyles.Float,
+                               CultureInfo.InvariantCulture, out value);
+    }
+
+    static bool AreEqual(double x, double y) => Math.Abs(x - y) < Eps;
+}
