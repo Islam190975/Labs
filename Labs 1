@@ -1,0 +1,47 @@
+using System;
+using System.Text;
+using System.Globalization;
+
+class MassConverter
+{
+    // Константы перевода из 1 килограмма
+    const double KgToPounds = 2.20462262;
+    const double KgToOunces = 35.27396195;
+    const double KgToStones = 0.15747304;
+
+    static void Main()
+    {
+        Console.OutputEncoding = Encoding.UTF8;
+        Console.InputEncoding = Encoding.UTF8;
+
+        Console.WriteLine("=== КОНВЕРТЕР МАССЫ ===");
+        Console.Write("Введите массу в килограммах (кг): ");
+        string input = Console.ReadLine();
+
+        // Замена запятой на точку для корректного разбора дробных чисел
+        if (!double.TryParse(input?.Replace(',', '.'), NumberStyles.Float,
+            CultureInfo.InvariantCulture, out double kg))
+        {
+            Console.WriteLine("Ошибка ввода: необходимо ввести числовое значение.");
+            return;
+        }
+
+        // Проверка на неотрицательность массы
+        if (kg < 0)
+        {
+            Console.WriteLine("Ошибка: масса не может быть отрицательной.");
+            return;
+        }
+
+        // Линейные вычисления перевода массы
+        double pounds = kg * KgToPounds;
+        double ounces = kg * KgToOunces;
+        double stones = kg * KgToStones;
+
+        // Вывод результатов в читаемом виде с пояснениями
+        Console.WriteLine($"\nИсходная масса: {kg:F2} кг");
+        Console.WriteLine($"В фунтах (lb):  {pounds:F2}");
+        Console.WriteLine($"В унциях (oz):  {ounces:F2}");
+        Console.WriteLine($"В стоунах (st): {stones:F2}");
+    }
+}
