@@ -1,0 +1,69 @@
+using System;
+using System.Text;
+
+class ArraySplitter
+{
+    static void Main()
+    {
+        Console.OutputEncoding = Encoding.UTF8;
+        Console.InputEncoding = Encoding.UTF8;
+
+        Console.WriteLine("=== РАЗДЕЛЕНИЕ МАССИВА НА ЧЁТНЫЕ И НЕЧЁТНЫЕ ===");
+        Console.Write("Введите размер массива n: ");
+        if (!int.TryParse(Console.ReadLine(), out int n) || n <= 0)
+        {
+            Console.WriteLine("Ошибка: размер массива должен быть положительным целым числом.");
+            return;
+        }
+
+        int[] source = new int[n];
+        int evenCount = 0, oddCount = 0;
+
+        // Заполнение исходного массива и подсчёт чётных/нечётных элементов
+        for (int i = 0; i < source.Length; i++)
+        {
+            Console.Write($"Элемент [{i}]: ");
+            if (!int.TryParse(Console.ReadLine(), out source[i]))
+            {
+                Console.WriteLine("Ошибка ввода: необходимо ввести целое число.");
+                return;
+            }
+            if (source[i] % 2 == 0) evenCount++;
+            else oddCount++;
+        }
+
+        // Распределение элементов по двум массивам точного размера
+        int[] evens = new int[evenCount];
+        int[] odds = new int[oddCount];
+        int eIdx = 0, oIdx = 0;
+
+        for (int i = 0; i < source.Length; i++)
+        {
+            if (source[i] % 2 == 0) evens[eIdx++] = source[i];
+            else odds[oIdx++] = source[i];
+        }
+
+        // Сортировка обоих массивов по возрастанию
+        BubbleSort(evens);
+        BubbleSort(odds);
+
+        PrintArray("\nИсходный массив:     ", source);
+        PrintArray("Чётные (сорт.):      ", evens);
+        PrintArray("Нечётные (сорт.):    ", odds);
+    }
+
+    static void BubbleSort(int[] arr)
+    {
+        for (int i = 0; i < arr.Length - 1; i++)
+            for (int j = 0; j < arr.Length - 1 - i; j++)
+                if (arr[j] > arr[j + 1])
+                    (arr[j], arr[j + 1]) = (arr[j + 1], arr[j]);
+    }
+
+    static void PrintArray(string label, int[] arr)
+    {
+        Console.Write(label);
+        Console.WriteLine(arr.Length > 0 ? string.Join(", ", arr) : "нет элементов");
+    }
+}
+ 
