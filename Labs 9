@@ -1,0 +1,107 @@
+using System;
+using System.IO;
+using System.Text;
+
+class FileArchiver
+{
+    const string HeaderPrefix = "###FILE|";
+
+    static void Main()
+    {
+        Console.OutputEncoding = Encoding.UTF8;
+        Console.InputEncoding = Encoding.UTF8;
+
+        bool running = true;
+        while (running)
+        {
+            Console.WriteLine("\n=== АРХИВАТОР ФАЙЛОВ ===");
+            Console.WriteLine("1 - Объединить файлы | 2 - Разделить архив | 0 - Выход");
+            Console.Write("Выбор: ");
+            string choice = Console.ReadLine();
+
+            try
+            {
+                switch (choice)
+                {
+                    case "1": MergeFiles(); break;
+                    case "2": SplitArchive(); break;
+                    case "0": running = false; break;
+                    default:  Console.WriteLine("Неизвестный пункт меню."); break;
+                }
+            }
+            catch (FormatException ex) { Console.WriteLine("Ошибка формата: " + ex.Message); }
+            catch (ArgumentException ex) { Console.WriteLine("Некорректные данные: " + ex.Message); }
+            catch (UnauthorizedAccessException ex) { Console.WriteLine("Нет прав доступа: " + ex.Message); }
+            catch (FileNotFoundException ex) { Console.WriteLine("Файл не найден: " + ex.Message); }
+            catch (IOException ex) { Console.WriteLine("Ошибка ввода-вывода: " + ex.Message); }
+            finally { Console.WriteLine("[Операция завершена]"); }
+        }
+    }
+
+    // Объединение файлов в один архив (поток закрывается через using)
+    static void MergeFiles()
+    {
+        Console.Write("Имя итогового архива (например, archive.txt): ");
+        string archive = Console.ReadLine();
+        if (string.IsNullOrWhiteSpace(archive))
+            throw new ArgumentException("Имя архива не может быть пустым.");
+
+        Console.Write("Сколько файлов объединить: ");
+        int count = int.Parse(Console.ReadLine());
+        if (count <= 0)
+            throw new ArgumentException("Количество файлов должно быть больше нуля.");
+
+        using (StreamWriter writer = new StreamWriter(archive, false, Encoding.UTF8))
+        {
+            for (int i = 0; i < count; i++)
+            {
+                Console.Write($"Путь к файлу #{i + 1}: ");
+                string path = Console.ReadLine();
+                if (!File.Exists(path))
+                    throw new FileNotFoundException("Исходный файл не найден.", path);
+
+                string[] lines = File.ReadAllLines(path, Encoding.UTF8);
+                writer.WriteLine($"{HeaderPrefix}{Path.GetFileName(path)}|{lines.Length}");
+                foreach (string line in lines) writer.WriteLine(line);
+            }
+        }
+        Console.WriteLine($"Архив '{archive}' создан ({count} файл.).");
+    }
+
+    // Разделение архива на файлы (поток чтения закрывается в блоке finally)
+    static void SplitArchive()
+    {
+        Console.Write("Имя архива для распаковки: ");
+        string archive = Console.ReadLine();
+        if (!File.Exists(archive))
+            throw new FileNotFoundException("Файл архива не найден.", archive);
+
+        Console.Write("Папка для извлечения: ");
+        string outDir = Console.ReadLine();
+        if (string.IsNullOrWhiteSpace(outDir))
+            throw new ArgumentException("Имя папки не может быть пустым.");
+
+        Directory.CreateDirectory(outDir);
+        StreamReader reader = null;
+        int extracted = 0;
+        try
+        {
+            reader = new StreamReader(archive, Encoding.UTF8);
+            string header;
+            while ((header = reader.ReadLine()) != null)
+            {
+                if (!header.StartsWith(HeaderPrefix))
+                    throw new FormatException("Нарушена структура заголовка архива.");
+                string[] parts = header.Substring(HeaderPrefix.Length).Split('|');
+                int lineCount = int.Parse(parts[1]);
+
+                using (StreamWriter writer = new StreamWriter(Path.Combine(outDir, parts[0]), false, Encoding.UTF8))
+                    for (int i = 0; i < lineCount; i++)
+                        writer.WriteLine(reader.ReadLine() ?? throw new FormatException("Неожиданный конец архива."));
+                extracted++;
+            }
+            Console.WriteLine($"Распаковано файлов: {extracted} -> '{outDir}'.");
+        }
+        finally { reader?.Close(); } // гарантированное закрытие потока
+    }
+}
